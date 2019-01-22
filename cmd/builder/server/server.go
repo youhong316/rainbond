@@ -23,17 +23,24 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/goodrain/rainbond/mq/client"
+
+	"github.com/goodrain/rainbond/builder/discover"
+	"github.com/goodrain/rainbond/builder/exector"
+	"github.com/goodrain/rainbond/builder/monitor"
 	"github.com/goodrain/rainbond/cmd/builder/option"
-	"github.com/goodrain/rainbond/pkg/builder/discover"
-	"github.com/goodrain/rainbond/pkg/builder/exector"
-	"github.com/goodrain/rainbond/pkg/db"
-	"github.com/goodrain/rainbond/pkg/db/config"
-	"github.com/goodrain/rainbond/pkg/event"
+	"github.com/goodrain/rainbond/db"
+	"github.com/goodrain/rainbond/db/config"
+	"github.com/goodrain/rainbond/event"
 
 	"net/http"
 
 	"github.com/Sirupsen/logrus"
-	"github.com/goodrain/rainbond/pkg/builder/api"
+	"github.com/goodrain/rainbond/builder/api"
+	"github.com/goodrain/rainbond/builder/clean"
+	discoverv2 "github.com/goodrain/rainbond/discover.v2"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 //Run start run
@@ -49,11 +56,19 @@ func Run(s *option.Builder) error {
 	if err := db.CreateManager(dbconfig); err != nil {
 		return err
 	}
-	if err := event.NewManager(event.EventConfig{EventLogServers: s.Config.EventLogServers}); err != nil {
+	if err := event.NewManager(event.EventConfig{
+		EventLogServers: s.Config.EventLogServers,
+		DiscoverAddress: s.Config.EtcdEndPoints,
+	}); err != nil {
 		return err
 	}
 	defer event.CloseManager()
-	exec, err := exector.NewManager(dbconfig)
+	client, err := client.NewMqClient(s.Config.EtcdEndPoints, s.Config.MQAPI)
+	if err != nil {
+		logrus.Errorf("new Mq client error, %v", err)
+		return err
+	}
+	exec, err := exector.NewManager(s.Config, client)
 	if err != nil {
 		return err
 	}
@@ -61,13 +76,36 @@ func Run(s *option.Builder) error {
 		return err
 	}
 	defer exec.Stop()
-	dis := discover.NewTaskManager(s.Config, exec)
+	dis := discover.NewTaskManager(s.Config, client, exec)
 	if err := dis.Start(); err != nil {
 		return err
 	}
 	defer dis.Stop()
 
+	if s.Config.CleanUp {
+		cle, err := clean.CreateCleanManager()
+		if err != nil {
+			return err
+		}
+		if err := cle.Start(errChan); err != nil {
+			return err
+		}
+		defer cle.Stop()
+	}
+	keepalive, err := discoverv2.CreateKeepAlive(s.Config.EtcdEndPoints, "builder",
+		"", s.Config.HostIP, s.Config.APIPort)
+	if err != nil {
+		return err
+	}
+	if err := keepalive.Start(); err != nil {
+		return err
+	}
+	defer keepalive.Stop()
+
+	exporter := monitor.NewExporter()
+	prometheus.MustRegister(exporter)
 	r := api.APIServer()
+	r.Handle(s.Config.PrometheusMetricPath, promhttp.Handler())
 	logrus.Info("builder api listen port 3228")
 	go http.ListenAndServe(":3228", r)
 

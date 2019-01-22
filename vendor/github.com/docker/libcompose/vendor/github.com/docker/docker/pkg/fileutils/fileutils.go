@@ -1,4 +1,4 @@
-package fileutils
+package fileutils // import "github.com/docker/docker/pkg/fileutils"
 
 import (
 	"errors"
@@ -10,7 +10,7 @@ import (
 	"strings"
 	"text/scanner"
 
-	"github.com/sirupsen/logrus"
+	"github.com/Sirupsen/logrus"
 )
 
 // PatternMatcher allows checking paths agaist a list of patterns

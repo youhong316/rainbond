@@ -18,9 +18,13 @@
 
 package option
 
-import "github.com/spf13/pflag"
-import "github.com/Sirupsen/logrus"
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/Sirupsen/logrus"
+	"github.com/goodrain/rainbond/mq/client"
+	"github.com/spf13/pflag"
+)
 
 //Config config server
 type Config struct {
@@ -38,6 +42,8 @@ type Config struct {
 	MQAPI                string
 	DockerEndpoint       string
 	HostIP               string
+	CleanUp              bool
+	Topic                string
 }
 
 //Builder  builder server
@@ -52,6 +58,9 @@ func NewBuilder() *Builder {
 	return &Builder{}
 }
 
+//
+type NodeOSType string
+
 //AddFlags config
 func (a *Builder) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&a.LogLevel, "log-level", "info", "the entrance log level")
@@ -61,14 +70,16 @@ func (a *Builder) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&a.PrometheusMetricPath, "metric", "/metrics", "prometheus metrics path")
 	fs.StringVar(&a.DBType, "db-type", "mysql", "db type mysql or etcd")
 	fs.StringVar(&a.MysqlConnectionInfo, "mysql", "root:admin@tcp(127.0.0.1:3306)/region", "mysql db connection info")
-	fs.StringSliceVar(&a.EventLogServers, "event-servers", []string{"127.0.0.1:6367"}, "event log server address. simple lb")
-	fs.StringVar(&a.KubeConfig, "kube-config", "/etc/goodrain/kubernetes/admin.kubeconfig", "kubernetes api server config file")
+	fs.StringSliceVar(&a.EventLogServers, "event-servers", []string{"127.0.0.1:6366"}, "event log server address. simple lb")
+	fs.StringVar(&a.KubeConfig, "kube-config", "/opt/rainbond/etc/kubernetes/kubecfg/admin.kubeconfig", "kubernetes api server config file")
 	fs.IntVar(&a.MaxTasks, "max-tasks", 50, "the max tasks for per node")
 	fs.IntVar(&a.APIPort, "api-port", 3228, "the port for api server")
 	fs.StringVar(&a.MQAPI, "mq-api", "127.0.0.1:6300", "acp_mq api")
 	fs.StringVar(&a.RunMode, "run", "sync", "sync data when worker start")
 	fs.StringVar(&a.DockerEndpoint, "dockerd", "127.0.0.1:2376", "dockerd endpoint")
 	fs.StringVar(&a.HostIP, "hostIP", "", "Current node Intranet IP")
+	fs.BoolVar(&a.CleanUp, "clean-up", false, "Turn on build version cleanup")
+	fs.StringVar(&a.Topic, "topic", "builder", "Topic in mq,you coule choose `builder` or `windows_builder`")
 }
 
 //SetLog 设置log
@@ -81,8 +92,10 @@ func (a *Builder) SetLog() {
 	logrus.SetLevel(level)
 }
 
-//CheckEnv 检测环境变量
-func (a *Builder) CheckEnv() error {
-
+//CheckConfig check config
+func (a *Builder) CheckConfig() error {
+	if a.Topic != client.BuilderTopic && a.Topic != client.WindowsBuilderTopic {
+		return fmt.Errorf("Topic is only suppory `%s` and `%s`", client.BuilderTopic, client.WindowsBuilderTopic)
+	}
 	return nil
 }

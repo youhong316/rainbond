@@ -294,7 +294,7 @@ func (r *Remote) fetch(ctx context.Context, o *FetchOptions) (storer.ReferenceSt
 	req.Wants, err = getWants(r.s, refs)
 	if len(req.Wants) > 0 {
 		req.Haves, err = getHaves(localRefs, remoteRefs, r.s)
-		if err != nil {
+		if err != nil && err != plumbing.ErrObjectNotFound {
 			return nil, err
 		}
 
@@ -539,6 +539,7 @@ func getHavesFromRef(
 		return nil
 	}
 
+	//local store
 	commit, err := object.GetCommit(s, h)
 	if err != nil {
 		// Ignore the error if this isn't a commit.
@@ -578,7 +579,6 @@ func getHaves(
 	if err != nil {
 		return nil, err
 	}
-
 	for _, ref := range localRefs {
 		if haves[ref.Hash()] {
 			continue
@@ -980,9 +980,25 @@ func pushHashes(
 }
 
 func (r *Remote) updateShallow(o *FetchOptions, resp *packp.UploadPackResponse) error {
-	if o.Depth == 0 {
+
+	if o.Depth == 0 || len(resp.Shallows) == 0 {
 		return nil
 	}
 
-	return r.s.SetShallow(resp.Shallows)
+	shallows, err := r.s.Shallow()
+	if err != nil {
+		return err
+	}
+
+outer:
+	for _, s := range resp.Shallows {
+		for _, oldS := range shallows {
+			if s == oldS {
+				continue outer
+			}
+		}
+		shallows = append(shallows, s)
+	}
+
+	return r.s.SetShallow(shallows)
 }

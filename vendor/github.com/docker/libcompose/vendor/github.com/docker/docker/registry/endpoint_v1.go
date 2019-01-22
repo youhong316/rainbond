@@ -1,4 +1,4 @@
-package registry
+package registry // import "github.com/docker/docker/registry"
 
 import (
 	"crypto/tls"
@@ -11,7 +11,7 @@ import (
 
 	"github.com/docker/distribution/registry/client/transport"
 	registrytypes "github.com/docker/docker/api/types/registry"
-	"github.com/sirupsen/logrus"
+	"github.com/Sirupsen/logrus"
 )
 
 // V1Endpoint stores basic information about a V1 registry endpoint.
@@ -77,7 +77,7 @@ func newV1Endpoint(address url.URL, tlsConfig *tls.Config, userAgent string, met
 
 	// TODO(tiborvass): make sure a ConnectTimeout transport is used
 	tr := NewTransport(tlsConfig)
-	endpoint.client = HTTPClient(transport.NewTransport(tr, DockerHeaders(userAgent, metaHeaders)...))
+	endpoint.client = HTTPClient(transport.NewTransport(tr, Headers(userAgent, metaHeaders)...))
 	return endpoint
 }
 

@@ -1,30 +1,11 @@
-Before filling this issue, please read the [manual](https://www.rainbond.com/docs/stable/) and search if the bug do not already exists in the database (https://github.com/goodrain/rainbond/issues).
+If you want to report a bug or advice, please provide the following information and try to describe your issue in English, If it's a question of use,please read the [documentation](https://www.rainbond.com/docs/stable/) or browse the [community](https://t.goodrain.com/)
 
-**Is this a BUG REPORT or FEATURE REQUEST ?**:
+- [ ] Rainbond versions(eg. grctl version)
 
-> Uncomment only one, leave it on its own line: 
->
-> bug
-> feature
-> 
+- [ ] Kubernetes versions(If you use your own cluster)
 
-**Description**
+- [ ] Operating system and kernel
 
-For a bug: Describe the bug and list the steps you used when the issue occurred.
-For a feature: Describe your needs.
+- [ ] Provider(Aliyun,VirtualBox,...)
 
-
-**What happened**:
-
-**What you expected to happen**:
-
-**How to reproduce it (as minimally and precisely as possible)**:
-
-**Environment**:
-- rainbond version:
-- Cloud provider or hardware configuration:
-- OS (e.g. from /etc/os-release):
-- Kernel (e.g. `uname -a`):
-- docker image version:
-- grctl version:
-- Others:
+- [ ] Install details(Online/Offline,SingleNode/HA)

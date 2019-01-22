@@ -35,6 +35,7 @@ type GRPCResolver struct {
 	Client *etcd.Client
 }
 
+//Update Update
 func (gr *GRPCResolver) Update(ctx context.Context, target string, nm naming.Update, opts ...etcd.OpOption) (err error) {
 	switch nm.Op {
 	case naming.Add:
@@ -44,13 +45,16 @@ func (gr *GRPCResolver) Update(ctx context.Context, target string, nm naming.Upd
 		}
 		_, err = gr.Client.KV.Put(ctx, target+"/"+nm.Addr, string(v), opts...)
 	case naming.Delete:
-		_, err = gr.Client.Delete(ctx, target+"/"+nm.Addr, opts...)
+		if gr.Client != nil {
+			_, err = gr.Client.Delete(ctx, target+"/"+nm.Addr, opts...)
+		}
 	default:
 		return status.Error(codes.InvalidArgument, "naming: bad naming op")
 	}
 	return err
 }
 
+//Resolve Resolve
 func (gr *GRPCResolver) Resolve(target string) (naming.Watcher, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	w := &gRPCWatcher{c: gr.Client, target: target + "/", ctx: ctx, cancel: cancel}
@@ -70,9 +74,11 @@ type gRPCWatcher struct {
 // Calls to Next should be serialized; concurrent calls are not safe since
 // there is no way to reconcile the update ordering.
 func (gw *gRPCWatcher) Next() ([]*naming.Update, error) {
+
 	if gw.wch == nil {
 		// first Next() returns all addresses
-		return gw.firstNext()
+		all, err := gw.firstNext()
+		return all, err
 	}
 	if gw.err != nil {
 		return nil, gw.err
@@ -114,7 +120,6 @@ func (gw *gRPCWatcher) firstNext() ([]*naming.Update, error) {
 	if gw.err = err; err != nil {
 		return nil, err
 	}
-
 	updates := make([]*naming.Update, 0, len(resp.Kvs))
 	for _, kv := range resp.Kvs {
 		var jupdate naming.Update
@@ -123,7 +128,6 @@ func (gw *gRPCWatcher) firstNext() ([]*naming.Update, error) {
 		}
 		updates = append(updates, &jupdate)
 	}
-
 	opts := []etcd.OpOption{etcd.WithRev(resp.Header.Revision + 1), etcd.WithPrefix(), etcd.WithPrevKV()}
 	gw.wch = gw.c.Watch(gw.ctx, gw.target, opts...)
 	return updates, nil

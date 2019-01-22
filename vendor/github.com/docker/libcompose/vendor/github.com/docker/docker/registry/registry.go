@@ -1,5 +1,5 @@
 // Package registry contains client primitives to interact with a remote Docker registry.
-package registry
+package registry // import "github.com/docker/docker/registry"
 
 import (
 	"crypto/tls"
@@ -16,7 +16,7 @@ import (
 	"github.com/docker/distribution/registry/client/transport"
 	"github.com/docker/go-connections/sockets"
 	"github.com/docker/go-connections/tlsconfig"
-	"github.com/sirupsen/logrus"
+	"github.com/Sirupsen/logrus"
 )
 
 var (
@@ -102,8 +102,8 @@ func ReadCertsDirectory(tlsConfig *tls.Config, directory string) error {
 	return nil
 }
 
-// DockerHeaders returns request modifiers with a User-Agent and metaHeaders
-func DockerHeaders(userAgent string, metaHeaders http.Header) []transport.RequestModifier {
+// Headers returns request modifiers with a User-Agent and metaHeaders
+func Headers(userAgent string, metaHeaders http.Header) []transport.RequestModifier {
 	modifiers := []transport.RequestModifier{}
 	if userAgent != "" {
 		modifiers = append(modifiers, transport.NewHeaderRequestModifier(http.Header{

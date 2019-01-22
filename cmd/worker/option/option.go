@@ -18,28 +18,37 @@
 
 package option
 
-import "github.com/spf13/pflag"
-import "github.com/Sirupsen/logrus"
-import "fmt"
-import "os"
+import (
+	"flag"
+	"fmt"
+	"os"
+
+	"github.com/Sirupsen/logrus"
+	"github.com/spf13/pflag"
+	"k8s.io/client-go/kubernetes"
+)
 
 //Config config server
 type Config struct {
-	EtcdEndPoints        []string
-	EtcdTimeout          int
-	EtcdPrefix           string
-	ClusterName          string
-	MysqlConnectionInfo  string
-	DBType               string
-	PrometheusMetricPath string
-	EventLogServers      []string
-	KubeConfig           string
-	MaxTasks             int
-	MQAPI                string
-	NodeName             string
-	NodeAPI              string
-	Listen               string
-	HostIP               string
+	EtcdEndPoints           []string
+	EtcdTimeout             int
+	EtcdPrefix              string
+	ClusterName             string
+	MysqlConnectionInfo     string
+	DBType                  string
+	PrometheusMetricPath    string
+	EventLogServers         []string
+	KubeConfig              string
+	MaxTasks                int
+	MQAPI                   string
+	NodeName                string
+	NodeAPI                 string
+	Listen                  string
+	HostIP                  string
+	ServerPort              int
+	KubeClient              *kubernetes.Clientset
+	LeaderElectionNamespace string
+	LeaderElectionIdentity  string
 }
 
 //Worker  worker server
@@ -64,14 +73,17 @@ func (a *Worker) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&a.Listen, "listen", ":6369", "prometheus listen host and port")
 	fs.StringVar(&a.DBType, "db-type", "mysql", "db type mysql or etcd")
 	fs.StringVar(&a.MysqlConnectionInfo, "mysql", "root:admin@tcp(127.0.0.1:3306)/region", "mysql db connection info")
-	fs.StringSliceVar(&a.EventLogServers, "event-servers", []string{"127.0.0.1:6367"}, "event log server address. simple lb")
-	fs.StringVar(&a.KubeConfig, "kube-config", "/etc/goodrain/kubernetes/admin.kubeconfig", "kubernetes api server config file")
+	fs.StringSliceVar(&a.EventLogServers, "event-servers", []string{"127.0.0.1:6366"}, "event log server address. simple lb")
+	fs.StringVar(&a.KubeConfig, "kube-config", "/opt/rainbond/etc/kubernetes/kubecfg/admin.kubeconfig", "kubernetes api server config file")
 	fs.IntVar(&a.MaxTasks, "max-tasks", 50, "the max tasks for per node")
 	fs.StringVar(&a.MQAPI, "mq-api", "127.0.0.1:6300", "acp_mq api")
 	fs.StringVar(&a.RunMode, "run", "sync", "sync data when worker start")
 	fs.StringVar(&a.NodeName, "node-name", "", "the name of this worker,it must be global unique name")
 	fs.StringVar(&a.HostIP, "host-ip", "", "the ip of this worker,it must be global connected ip")
+	fs.IntVar(&a.ServerPort, "server-port", 6535, "the listen port that app runtime server")
 	fs.StringVar(&a.NodeAPI, "node-api", "http://172.30.42.1:6100", "node discover api, node docker endpoints")
+	flag.StringVar(&a.LeaderElectionNamespace, "leader-election-namespace", "rainbond", "Namespace where this attacher runs.")
+	flag.StringVar(&a.LeaderElectionIdentity, "leader-election-identity", "", "Unique idenity of this attcher. Typically name of the pod where the attacher runs.")
 }
 
 //SetLog 设置log

@@ -1,9 +1,9 @@
-package system
+package system // import "github.com/docker/docker/pkg/system"
 
 import (
 	"unsafe"
 
-	"github.com/sirupsen/logrus"
+	"github.com/Sirupsen/logrus"
 	"golang.org/x/sys/windows"
 )
 

@@ -1,6 +1,7 @@
 package project
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path"
@@ -10,7 +11,7 @@ import (
 
 	"github.com/docker/libcompose/config"
 	"github.com/docker/libcompose/logger"
-	"github.com/sirupsen/logrus"
+	"github.com/Sirupsen/logrus"
 )
 
 var projectRegexp = regexp.MustCompile("[^a-zA-Z0-9_.-]")
@@ -75,8 +76,7 @@ func (c *Context) determineProject() error {
 	c.ProjectName = normalizeName(name)
 
 	if c.ProjectName == "" {
-		//return fmt.Errorf("Falied to determine project name")
-		c.ProjectName="builder"
+		return fmt.Errorf("Falied to determine project name")
 	}
 
 	return nil
